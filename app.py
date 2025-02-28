@@ -28,11 +28,21 @@ def transfer(target, meta_data_token=None, meta_data=None):
     if target.lower() not in TRANSFER_TARGETS:
         return f"Sorry, there is no department by that name: {target}. Please ask for sales, support, billing, or general inquiries.", {}
     
-    transfer.add_application(
-        "main",
-        "connect",
-        {"to": TRANSFER_TARGETS[target.lower()]},
-    )
+    # Determine the transfer method based on the target format
+    target_uri = TRANSFER_TARGETS[target.lower()]
+    if target_uri.startswith("sip:"):
+        transfer.add_application(
+            "main",
+            "sip_refer",
+            {"to_uri": target_uri},
+        )
+    elif target_uri.startswith("+"):
+        transfer.add_application(
+            "main",
+            "connect",
+            {"to": target_uri},
+        )
+    
     return "Tell the user you are going to transfer the call to whoever they asked for. Do not change languages from the one you are currently using. Do not hangup.", {"SWML": transfer.render(), "transfer": "true"}
 
 @swaig.endpoint("Send message",
