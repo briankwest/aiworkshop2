@@ -23,11 +23,15 @@ swaig = SWAIG(app)
     target=SWAIGArgument("string", "the target to transfer the user to (sales, support, billing, general)"))
 def transfer(target, meta_data_token=None, meta_data=None):
     transfer = SignalWireML(version="1.0.0")
-
+    
+    # Check if the target exists in our TRANSFER_TARGETS dictionary
+    if target.lower() not in TRANSFER_TARGETS:
+        return f"Sorry, there is no department by that name: {target}. Please ask for sales, support, billing, or general inquiries.", {}
+    
     transfer.add_application(
         "main",
         "connect",
-        {"to": TRANSFER_TARGETS.get(target.lower(), TRANSFER_TARGETS["general"])},
+        {"to": TRANSFER_TARGETS[target.lower()]},
     )
     return "Tell the user you are going to transfer the call to whoever they asked for. Do not change languages from the one you are currently using. Do not hangup.", {"SWML": transfer.render(), "transfer": "true"}
 
