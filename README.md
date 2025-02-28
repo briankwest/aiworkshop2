@@ -67,12 +67,23 @@ DEBUG=True
 ### Call Transfer and Message Sending
 
 ```python
+from typing import overload
 from flask import Flask, request, jsonify
+from signalwire_ml import SignalWireML
 from signalwire_swaig.core import SWAIG, SWAIGArgument
 import os
+import requests
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+
+# Get transfer targets from environment variables
+TRANSFER_TARGETS = {
+    "sales": os.getenv("TRANSFER_SALES"),
+    "support": os.getenv("TRANSFER_SUPPORT"),
+    "billing": os.getenv("TRANSFER_BILLING"),
+    "general": os.getenv("TRANSFER_GENERAL")
+}
 
 app = Flask(__name__)
 swaig = SWAIG(app)
@@ -80,15 +91,34 @@ swaig = SWAIG(app)
 @swaig.endpoint("Transfer call",
     target=SWAIGArgument("string", "the target to transfer the user to (sales, support, billing, general)"))
 def transfer(target, meta_data_token=None, meta_data=None):
-    # Implementation for call transfer
-    return "Transfer confirmation message", {"SWML": transfer.render(), "transfer": "true"}
+    transfer = SignalWireML(version="1.0.0")
+
+    transfer.add_application(
+        "main",
+        "connect",
+        {"to": TRANSFER_TARGETS.get(target.lower(), TRANSFER_TARGETS["general"])},
+    )
+    return "Tell the user you are going to transfer the call to whoever they asked for. Do not change languages from the one you are currently using. Do not hangup.", {"SWML": transfer.render(), "transfer": "true"}
 
 @swaig.endpoint("Send message",
     to=SWAIGArgument("string", "Phone number to send the message to in e.164 format. eg +1234567890"),
     message=SWAIGArgument("string", "Message content to send"))
 def send_message(to, message, meta_data_token=None, meta_data=None):
-    # Implementation for message sending
-    return "Message has been sent.", {"SWML": msg.render()}
+        msg = SignalWireML(version="1.0.0")
+
+        msg.add_application(
+            "main",
+            "send_sms",
+            {
+                "to_number": to,
+                "from_number": os.getenv("FROM_NUMBER"),
+                "body": message,
+            }
+        )
+        return "Message has been sent.", {"SWML": msg.render()}
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=os.getenv('PORT', 5000), debug=os.getenv('DEBUG', False))
 ```
 
 ## Sample Queries & Responses
