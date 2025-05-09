@@ -1,9 +1,8 @@
 from typing import overload
 from flask import Flask, request, jsonify
-from signalwire_swml.swml import SignalWireML
+from signalwire_swml.swml import SignalWireSWML
 from signalwire_swaig.swaig import SWAIG, SWAIGArgument
 import os
-import requests
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
@@ -22,7 +21,7 @@ swaig = SWAIG(app)
 @swaig.endpoint("Transfer call",
     target=SWAIGArgument("string", "the target to transfer the user to (sales, support, billing, general)"))
 def transfer(target, meta_data_token=None, meta_data=None):
-    transfer = SignalWireML(version="1.0.0")
+    transfer = SignalWireSWML(version="1.0.0")
     
     # Check if the target exists in our TRANSFER_TARGETS dictionary
     if target.lower() not in TRANSFER_TARGETS:
